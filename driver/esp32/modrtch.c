@@ -58,14 +58,25 @@ static const char TAG[] = "[RTCH]";
 
 #define GPIO_TO_ADC_ELEMENT(x) [x] = CONCAT3(ADC1_GPIO, x, _CHANNEL)
 static const int gpio_to_adc[] = {
-        GPIO_TO_ADC_ELEMENT(36),
-        GPIO_TO_ADC_ELEMENT(37),
-        GPIO_TO_ADC_ELEMENT(38),
-        GPIO_TO_ADC_ELEMENT(39),
-        GPIO_TO_ADC_ELEMENT(32),
-        GPIO_TO_ADC_ELEMENT(33),
-        GPIO_TO_ADC_ELEMENT(34),
-        GPIO_TO_ADC_ELEMENT(35),
+#if CONFIG_IDF_TARGET_ESP32S3
+    GPIO_TO_ADC_ELEMENT(1),
+    GPIO_TO_ADC_ELEMENT(2),
+    GPIO_TO_ADC_ELEMENT(3),
+    GPIO_TO_ADC_ELEMENT(4),
+    GPIO_TO_ADC_ELEMENT(5),
+    GPIO_TO_ADC_ELEMENT(6),
+    GPIO_TO_ADC_ELEMENT(7),
+    GPIO_TO_ADC_ELEMENT(8),
+#else
+    GPIO_TO_ADC_ELEMENT(36),
+    GPIO_TO_ADC_ELEMENT(37),
+    GPIO_TO_ADC_ELEMENT(38),
+    GPIO_TO_ADC_ELEMENT(39),
+    GPIO_TO_ADC_ELEMENT(32),
+    GPIO_TO_ADC_ELEMENT(33),
+    GPIO_TO_ADC_ELEMENT(34),
+    GPIO_TO_ADC_ELEMENT(35),
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -392,7 +403,7 @@ STATIC int measure_axis(
 
     adc1_channel_t adc_channel = gpio_to_adc[measure];
 
-    adc_gpio_init(ADC_UNIT_1, adc_channel);
+    /* adc_gpio_init(ADC_UNIT_1, adc_channel); */
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(adc_channel,ADC_ATTEN_DB_11);
 
