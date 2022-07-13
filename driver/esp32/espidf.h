@@ -130,6 +130,9 @@ static inline void get_ccount(int *ccount)
 #include "mdns.h"
 #include "esp_http_client.h"
 #include "sh2lib.h"
+#include "../../esp_lcd/include/esp_lcd_panel_ops.h"
+#include "../../esp_lcd/include/esp_lcd_panel_rgb.h"
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Helper function to register HTTP event handler
@@ -243,4 +246,4 @@ void ili9xxx_post_cb_isr(spi_transaction_t *trans);
 
 void ili9xxx_flush(void *disp_drv, const void *area, void *color_p);
 
-
+void example_lvgl_flush_cb(void *_disp_drv, const void *_area, void *_color_p);
