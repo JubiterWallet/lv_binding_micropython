@@ -246,3 +246,24 @@ void ili9xxx_flush(void *_disp_drv, const void *_area, void *_color_p)
 
     ili9xxx_send_data_dma(disp_drv, color_p, size * color_size, dc, *spi_ptr);
 }
+
+void example_lvgl_flush_cb(void *_disp_drv, const void *_area, void *_color_p)
+{
+	lv_disp_drv_t *disp_drv = _disp_drv;
+    const lv_area_t *area = _area;
+    lv_color_t *color_p = _color_p;
+	
+    int offsetx1 = area->x1;
+    int offsetx2 = area->x2;
+    int offsety1 = area->y1;
+    int offsety2 = area->y2;
+    
+    mp_buffer_info_t buffer_info;
+    mp_get_buffer_raise(mp_obj_dict_get(disp_drv->user_data, MP_OBJ_NEW_QSTR(MP_QSTR_panel_handle)), &buffer_info, MP_BUFFER_READ);
+    esp_lcd_panel_handle_t *panel_handle = buffer_info.buf;
+
+    // copy a buffer's content to a specific area of the display
+    esp_lcd_panel_draw_bitmap(*panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, color_p);
+    lv_disp_flush_ready(disp_drv);
+
+}
