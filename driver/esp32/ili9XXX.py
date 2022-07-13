@@ -54,6 +54,7 @@ import lvgl as lv
 import lv_utils
 import micropython
 import gc
+from machine import Pin, PWM
 
 micropython.alloc_emergency_exception_buf(256)
 # gc.threshold(0x10000) # leave enough room for SPI master TX DMA buffers
@@ -831,7 +832,8 @@ class st7735(ili9XXX):
 
 class st7701s:
 
-    def __init__(self, width=360, height=640, start_x=0, start_y=0, mhz=9, factor=1, asynchronous=False):
+    def __init__(self, width=360, height=640, start_x=0, start_y=0, mhz=9, factor=1, backlight=39, 
+                    bk_freq=1000, bk_duty=200, asynchronous=False):
         if not lv.is_initialized():
             lv.init()
 
@@ -843,6 +845,8 @@ class st7701s:
         self.mhz = mhz
         self.factor = factor
         self.buf_size = (self.width * self.height * lv.color_t.__SIZE__) // factor
+
+        Pin(backlight, Pin.OUT, value=0)    #turn off back light
 
         self.disp_rgb_interface_init()
 
@@ -877,6 +881,9 @@ class st7701s:
         if not lv_utils.event_loop.is_running():
             #print("Event loop start running!")
             self.event_loop = lv_utils.event_loop(freq=25, asynchronous=self.asynchronous)
+        
+        self.set_backlight(backlight, bk_freq, bk_duty)
+
 
     def disp_rgb_interface_init(self):
         panel_config = esp.esp_lcd_rgb_panel_config_t({
@@ -916,3 +923,10 @@ class st7701s:
         esp.esp_lcd_panel_reset(self.panel_handle)
         esp.esp_lcd_panel_init(self.panel_handle)
         esp.esp_lcd_panel_set_gap(self.panel_handle, 60, 0)
+
+    def set_backlight(self, backlight=39, bk_freq=1000, bk_duty=200):
+        self.backlight = backlight
+        self.bk_freq = bk_freq
+        self.bk_duty = bk_duty
+        self.bk_pwm = PWM(Pin(self.backlight), freq=self.bk_freq, duty=self.bk_duty)
+
