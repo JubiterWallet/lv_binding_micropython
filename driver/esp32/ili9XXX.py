@@ -828,3 +828,91 @@ class st7735(ili9XXX):
             width=width, height=height, start_x=start_x, start_y=start_y, invert=invert, double_buffer=double_buffer,
             half_duplex=half_duplex, display_type=DISPLAY_TYPE_ST7735, asynchronous=asynchronous,
             initialize=initialize)
+
+class st7701s:
+
+    def __init__(self, width=360, height=640, start_x=0, start_y=0, mhz=9, factor=1, asynchronous=False):
+        if not lv.is_initialized():
+            lv.init()
+
+        self.asynchronous = asynchronous
+        self.width = width
+        self.height = height
+        self.start_x = start_x
+        self.start_y = start_y
+        self.mhz = mhz
+        self.factor = factor
+        self.buf_size = (self.width * self.height * lv.color_t.__SIZE__) // factor
+
+        self.disp_rgb_interface_init()
+
+        self.buf1 = esp.heap_caps_malloc(self.buf_size,  esp.MALLOC_CAP.SPIRAM)
+        self.buf2 = esp.heap_caps_malloc(self.buf_size,  esp.MALLOC_CAP.SPIRAM)
+        
+        if self.buf1 and self.buf2:
+            print("Double buffer")
+        elif self.buf1:
+            print("Single buffer")
+        else:
+            raise RuntimeError("Not enough DMA-able memory to allocate display buffer")
+            
+        self.disp_buf = lv.disp_draw_buf_t()
+        self.disp_drv = lv.disp_drv_t()
+ 
+        self.disp_buf.init(self.buf1, self.buf2, self.buf_size) # // lv.color_t.__SIZE__)
+        self.disp_drv.init()
+        
+        self.disp_drv.user_data = {
+            'panel_handle': self.panel_handle,
+        }
+
+        self.disp_drv.draw_buf = self.disp_buf
+        self.disp_drv.flush_cb = esp.example_lvgl_flush_cb
+        #self.disp_drv.monitor_cb = self.monitor
+        self.disp_drv.hor_res = self.width
+        self.disp_drv.ver_res = self.height
+
+        self.disp = self.disp_drv.register()
+
+        if not lv_utils.event_loop.is_running():
+            #print("Event loop start running!")
+            self.event_loop = lv_utils.event_loop(freq=25, asynchronous=self.asynchronous)
+
+    def disp_rgb_interface_init(self):
+        panel_config = esp.esp_lcd_rgb_panel_config_t({
+            'data_width' : 16,
+            'psram_trans_align': 64,
+            'clk_src': 0 ,
+            'disp_gpio_num':-1,
+            'pclk_gpio_num': 21,
+            'vsync_gpio_num': 48,
+            'hsync_gpio_num': 47,
+            'de_gpio_num': 45,
+            'data_gpio_nums': [3, 4, 5, 6, 7, 8, 38, 40, 41, 9, 14, 15, 16, 17, 18, 36],
+            'timings': {
+                'pclk_hz': self.mhz * 1000 * 1000,
+                'h_res': self.width + 60,
+                'v_res': self.height,
+                'hsync_back_porch': 60,
+                'hsync_front_porch': 40,
+                'hsync_pulse_width': 4,
+                'vsync_back_porch': 20,
+                'vsync_front_porch': 20,
+                'vsync_pulse_width': 2,
+                'flags': {
+                    'pclk_active_neg': 1,
+                },
+            },
+            'flags':{
+                'fb_in_psram':1,
+            }
+        })
+
+        ptr_panel_handle = esp.C_Pointer()
+        ret = esp.esp_lcd_rgb_panel_config_t.new_rgb_panel(panel_config, ptr_panel_handle)
+        if ret != 0: raise RuntimeError("Failed esp_lcd_new_rgb_panel")
+
+        self.panel_handle = ptr_panel_handle.ptr_val
+        esp.esp_lcd_panel_reset(self.panel_handle)
+        esp.esp_lcd_panel_init(self.panel_handle)
+        esp.esp_lcd_panel_set_gap(self.panel_handle, 60, 0)
