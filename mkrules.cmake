@@ -147,8 +147,9 @@ function(all_lv_bindings)
                 soc/sens_struct.h
                 soc/rtc.h
                 driver/periph_ctrl.h
-		            esp_eth
-		            freertos
+		        esp_eth
+		        freertos
+                tcpip_adapter.h
         )
     endif(ESP_PLATFORM)
 
